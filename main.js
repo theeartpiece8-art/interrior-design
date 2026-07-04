@@ -281,6 +281,77 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   /* =========================================================
+     LOOP GALLERY (.hscroll-loop) — auto-scrolls continuously,
+     pauses while the visitor hovers/drags/wheels, and the arrow
+     buttons step one card forward or back. The track's second
+     half duplicates the first (aria-hidden), so wrapping the
+     scroll position by half the track width is invisible.
+     ========================================================= */
+  document.querySelectorAll('.hscroll-loop').forEach(function (gallery) {
+    var track = gallery.querySelector('.hscroll-track');
+    if (!track || !track.children.length) return;
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var paused = false, gliding = false, resumeTimer = null;
+
+    function gapPx() {
+      var g = parseFloat(getComputedStyle(track).columnGap);
+      return isNaN(g) ? 0 : g;
+    }
+    function wrapWidth() { return (track.scrollWidth + gapPx()) / 2; }
+
+    function pauseFor(ms) {
+      paused = true;
+      if (resumeTimer) clearTimeout(resumeTimer);
+      if (ms) resumeTimer = setTimeout(function () { paused = false; }, ms);
+    }
+
+    /* before any backwards movement at the left edge, silently jump
+       one loop forward so there is always room to scroll back */
+    function ensureBackroom() {
+      if (gallery.scrollLeft < 4) gallery.scrollLeft += wrapWidth();
+    }
+
+    if (!reduceMotion) {
+      (function step() {
+        if (!paused && !gliding && !document.hidden) {
+          gallery.scrollLeft += 0.7;
+          if (gallery.scrollLeft >= wrapWidth()) gallery.scrollLeft -= wrapWidth();
+        }
+        requestAnimationFrame(step);
+      })();
+    }
+
+    gallery.addEventListener('mouseenter', function () { pauseFor(0); });
+    gallery.addEventListener('mouseleave', function () {
+      if (resumeTimer) clearTimeout(resumeTimer);
+      paused = false;
+    });
+    gallery.addEventListener('mousedown', ensureBackroom);
+    gallery.addEventListener('wheel', function () { ensureBackroom(); pauseFor(2500); }, { passive: true });
+    gallery.addEventListener('touchstart', function () { ensureBackroom(); pauseFor(3500); }, { passive: true });
+
+    var controls = gallery.parentElement.querySelector('.hscroll-controls');
+    if (controls) {
+      controls.querySelectorAll('.hscroll-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var dir = parseInt(btn.getAttribute('data-dir'), 10) || 1;
+          var card = track.querySelector('.card');
+          var stepX = (card ? card.getBoundingClientRect().width : 420) + gapPx();
+          ensureBackroom();
+          pauseFor(3000);
+          gliding = true;
+          gallery.scrollTo({ left: gallery.scrollLeft + dir * stepX, behavior: 'smooth' });
+          setTimeout(function () {
+            gliding = false;
+            if (gallery.scrollLeft >= wrapWidth()) gallery.scrollLeft -= wrapWidth();
+          }, 650);
+        });
+      });
+    }
+  });
+
+  /* =========================================================
      HOVER-PREVIEW SERVICES LIST
      ========================================================= */
   var hoverPreview = document.querySelector('.hover-preview');

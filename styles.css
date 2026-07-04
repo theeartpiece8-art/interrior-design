@@ -316,6 +316,22 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
 .hscroll-track .card{ flex: 0 0 420px; scroll-snap-align: start; }
 @media (max-width: 700px){ .hscroll-track .card{ flex-basis: 78vw; } }
 
+/* Loop slider variant — auto-moves via JS but stays a real scroll
+   container, so visitors can drag/wheel/arrow back and forth.
+   Card sizing mirrors .hscroll-auto so the look is identical. */
+.hscroll-loop{ scroll-snap-type: none; }
+.hscroll-loop .hscroll-track .card{ flex-basis: calc((100% - 2 * var(--gutter)) / 3); }
+@media (max-width: 900px){ .hscroll-loop .hscroll-track .card{ flex-basis: calc((100% - var(--gutter)) / 2); } }
+@media (max-width: 600px){ .hscroll-loop .hscroll-track .card{ flex-basis: 82%; } }
+.hscroll-controls{ display:flex; justify-content:center; gap:12px; margin-top:32px; }
+.hscroll-btn{
+  width:46px; height:46px; border-radius:50%; border:1px solid var(--line);
+  background:transparent; color: var(--line); cursor:pointer; font-size:1.05rem;
+  display:inline-flex; align-items:center; justify-content:center; padding:0;
+  transition: background .25s var(--ease), color .25s var(--ease), transform .25s var(--ease);
+}
+.hscroll-btn:hover{ background: var(--line); color: var(--bg); transform: translateY(-2px); }
+
 /* Automatic slider variant — no drag, no buttons, continuous loop */
 .hscroll-auto{ overflow:hidden; cursor:default; }
 .hscroll-auto .hscroll-track{ animation: hscroll-auto-scroll 32s linear infinite; }
