@@ -4,6 +4,65 @@
    drag galleries, hover-preview service list, portfolio/blog filters,
    mock shopping cart, mock checkout. */
 
+/* =========================================================
+   SUPABASE BACKEND CONNECTION
+   Fill in backend-config.js with the two public values from:
+   Supabase Dashboard > Project Settings > API.
+   The anon key is safe to expose only because Row Level
+   Security allows inserts, never reads/updates/deletes.
+   ========================================================= */
+var BACKEND_CONFIG = window.STUDIO_BACKEND_CONFIG || {};
+var SUPABASE_URL = (BACKEND_CONFIG.supabaseUrl || '').replace(/\/$/, '');
+var SUPABASE_ANON_KEY = BACKEND_CONFIG.supabaseAnonKey || '';
+var BACKEND_SETUP_MESSAGE = 'Backend setup is not complete yet. Please add your Supabase URL and anon key in backend-config.js.';
+
+function backendReady() {
+  return /^https:\/\/[a-zA-Z0-9-]+\.supabase\.co$/.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 40;
+}
+
+var SUPABASE_CLIENT = null;
+var SUPABASE_CLIENT_PROMISE = null;
+
+function loadSupabaseClientScript() {
+  if (window.supabase && window.supabase.createClient) return Promise.resolve();
+  if (SUPABASE_CLIENT_PROMISE) return SUPABASE_CLIENT_PROMISE;
+
+  SUPABASE_CLIENT_PROMISE = new Promise(function (resolve, reject) {
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    script.async = true;
+    script.onload = function () { resolve(); };
+    script.onerror = function () { reject(new Error('Could not load Supabase client')); };
+    document.head.appendChild(script);
+  });
+
+  return SUPABASE_CLIENT_PROMISE;
+}
+
+function getSupabaseClient() {
+  if (!backendReady()) return Promise.reject(new Error('Supabase config missing'));
+  if (SUPABASE_CLIENT) return Promise.resolve(SUPABASE_CLIENT);
+
+  return loadSupabaseClientScript().then(function () {
+    SUPABASE_CLIENT = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return SUPABASE_CLIENT;
+  });
+}
+
+function sbInsert(table, row, options) {
+  return getSupabaseClient().then(function (client) {
+    var query = client.from(table);
+    var request = options && options.ignoreDuplicates
+      ? query.upsert(row, { onConflict: options.onConflict, ignoreDuplicates: true })
+      : query.insert(row);
+
+    return request.then(function (result) {
+      if (result.error) throw result.error;
+      return result.data;
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
   /* =========================================================
@@ -100,8 +159,33 @@ document.addEventListener('DOMContentLoaded', function () {
     talkForm.addEventListener('submit', function (e) {
       e.preventDefault();
       var confirmationEl = document.querySelector('.talk-confirmation');
-      talkForm.style.display = 'none';
-      if (confirmationEl) confirmationEl.style.display = 'block';
+      var talkBtn = talkForm.querySelector('button[type="submit"]');
+
+      function showTalkConfirmation() {
+        talkForm.style.display = 'none';
+        if (confirmationEl) confirmationEl.style.display = 'block';
+      }
+
+      if (!backendReady()) { alert(BACKEND_SETUP_MESSAGE); return; }
+
+      var row = {
+        name: (talkForm.querySelector('input[type="text"]') || {}).value || '',
+        email: (talkForm.querySelector('input[type="email"]') || {}).value || '',
+        message: (talkForm.querySelector('textarea') || {}).value || ''
+      };
+
+      if (!row.name.trim() || !row.email.trim() || !row.message.trim()) {
+        alert('Please fill in your name, email and message.');
+        return;
+      }
+
+      if (talkBtn) { talkBtn.disabled = true; talkBtn.textContent = 'Sending…'; }
+      sbInsert('messages', row)
+        .then(showTalkConfirmation)
+        .catch(function () {
+          if (talkBtn) { talkBtn.disabled = false; talkBtn.textContent = 'Send Message'; }
+          alert('Sorry — your message could not be sent. Please try again, or email info@macspace.studio.');
+        });
     });
   }
 
@@ -250,16 +334,38 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   /* =========================================================
-     NEWSLETTER FORMS — mock submit
+     NEWSLETTER FORMS — stored in Supabase, duplicates ignored
      ========================================================= */
   document.querySelectorAll('.newsletter form, .signup-form').forEach(function (form) {
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var btn = form.querySelector('button');
+      var emailInput = form.querySelector('input[type="email"]');
+      var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
       var original = btn.textContent;
-      btn.textContent = 'Thank you!';
-      setTimeout(function () { btn.textContent = original; }, 2500);
-      form.reset();
+
+      function thank() {
+        btn.textContent = 'Thank you!';
+        setTimeout(function () { btn.textContent = original; }, 2500);
+        form.reset();
+      }
+
+      if (!email) return;
+      if (!backendReady()) { alert(BACKEND_SETUP_MESSAGE); return; }
+
+      btn.disabled = true;
+      /* Plain insert; the table's UNIQUE email constraint rejects
+         duplicates with code 23505, which we treat as success so
+         re-subscribing silently thanks the visitor. (Upsert would
+         need a public SELECT policy, which RLS deliberately denies.) */
+      sbInsert('newsletter', { email: email })
+        .then(function () { btn.disabled = false; thank(); })
+        .catch(function (err) {
+          btn.disabled = false;
+          if (err && err.code === '23505') { thank(); return; }
+          btn.textContent = 'Try again';
+          setTimeout(function () { btn.textContent = original; }, 2500);
+        });
     });
   });
 
@@ -405,10 +511,43 @@ document.addEventListener('DOMContentLoaded', function () {
     checkoutForm.addEventListener('submit', function (e) {
       e.preventDefault();
       var confirmationEl = document.querySelector('.checkout-confirmation');
-      checkoutForm.style.display = 'none';
-      if (confirmationEl) confirmationEl.style.display = 'block';
-      cart = [];
-      saveCart();
+      var orderBtn = checkoutForm.querySelector('button[type="submit"]');
+
+      function confirmOrder() {
+        checkoutForm.style.display = 'none';
+        if (confirmationEl) confirmationEl.style.display = 'block';
+        cart = [];
+        saveCart();
+      }
+
+      if (!cart.length) {
+        alert('Your cart is empty. Please add at least one item before placing an order.');
+        return;
+      }
+
+      if (!backendReady()) { alert(BACKEND_SETUP_MESSAGE); return; }
+
+      /* Card number and expiry/CVC are intentionally never read
+         or transmitted — this is a mock order, no payment data. */
+      var order = {
+        customer_name: (checkoutForm.querySelector('input[type="text"]') || {}).value || '',
+        email: (checkoutForm.querySelector('input[type="email"]') || {}).value || '',
+        phone: (checkoutForm.querySelector('input[type="tel"]') || {}).value || '',
+        city: (checkoutForm.querySelector('select') || {}).value || '',
+        delivery_address: (checkoutForm.querySelector('.full input') || {}).value || '',
+        items: cart.map(function (i) {
+          return { id: i.id, name: i.name, price: i.price, qty: i.qty };
+        }),
+        total: cart.reduce(function (sum, i) { return sum + i.price * i.qty; }, 0)
+      };
+
+      if (orderBtn) { orderBtn.disabled = true; orderBtn.textContent = 'Placing order…'; }
+      sbInsert('orders', order)
+        .then(confirmOrder)
+        .catch(function () {
+          if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = 'Place Order'; }
+          alert('Sorry — your order could not be placed. Please try again.');
+        });
     });
   }
 

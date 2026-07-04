@@ -170,6 +170,7 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
   position: fixed; inset:0; background: var(--overlay-bg); z-index: 200;
   display:flex; flex-direction:column; justify-content:space-between; padding: 32px var(--gutter) 48px;
   transform: translateY(-100%); transition: transform .6s var(--ease);
+  overflow-y: auto; /* short/landscape viewports: links must stay reachable */
 }
 .nav-overlay.open{ transform: translateY(0); }
 .nav-overlay-close{
@@ -397,7 +398,7 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
 .add-to-cart:hover{ background: var(--line); color: var(--bg); }
 
 .cart-drawer{
-  position:fixed; top:0; right:0; height:100vh; width:400px; max-width:92vw; background: var(--bg-raised);
+  position:fixed; top:0; right:0; height:100vh; height:100dvh; width:400px; max-width:92vw; background: var(--bg-raised);
   box-shadow: -8px 0 32px rgba(0,0,0,.35); transform: translateX(100%); transition: transform .45s var(--ease);
   z-index: 220; display:flex; flex-direction:column; border-left:1px solid var(--border);
 }
@@ -438,16 +439,88 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
 .initiative-block img{ width:100%; height: 480px; object-fit:cover; border-radius: 12px; }
 @media (max-width:900px){ .initiative-block{ grid-template-columns:1fr; gap:28px; } .initiative-block.reverse{ direction:ltr; } .initiative-block img{ height:300px; } }
 
-/* Mobile header / small-screen fixes */
+/* Mobile header / small-screen fixes.
+   NOTE: these rules previously targeted .lets-talk-open, a class the markup
+   never uses — retargeted to the real header button (.header-actions .btn). */
+@media (max-width: 840px){
+  /* tablet-portrait band included: prevents "Dark mode" / "Let's Talk"
+     wrapping to two lines in the header at 768–840px */
+  .theme-toggle-label{ display:none; }
+  .header-actions .btn{ padding: 12px 20px; font-size:.66rem; }
+}
 @media (max-width: 720px){
   :root{ --gutter: 22px; }
-  .theme-toggle-label{ display:none; }
   .header-actions{ gap:14px; }
-  .lets-talk-open.btn{ padding: 12px 20px; font-size:.66rem; }
-  .logo{ font-size:1.25rem; }
+  .nav-wrap{ gap: 12px; }
+  .logo{ font-size: clamp(.95rem, 4.8vw, 1.25rem); }
   .logo small{ display:none; }
   .section{ padding: 76px 0; }
 }
-@media (max-width: 420px){
-  .lets-talk-open.btn{ display:none; }
+@media (max-width: 500px){
+  .header-actions .btn{ display:none; }
+}
+
+/* ==========================================================================
+   RESPONSIVE ADAPTATIONS — fit/size fixes only, no visual redesign.
+   Each rule fixes a measured overflow or usability issue; see
+   DEVELOPMENT_LOG.md for the audit that motivated it.
+   ========================================================================== */
+
+/* Long unbreakable tokens (email addresses) must never widen a column */
+.footer-grid li, .nav-overlay-footer span{ overflow-wrap: anywhere; }
+
+/* Inputs default to a min-width that can overflow narrow flex/grid tracks */
+.newsletter input, .signup-form input,
+.talk-form input, .checkout-panel input{ min-width: 0; }
+
+/* .hscroll's negative margins assume a .container parent; used full-bleed
+   at section level (index "Recent interiors") they pushed 40px past the
+   viewport on both sides and left the first card touching the screen edge */
+section > .hscroll{ margin-left: 0; margin-right: 0; }
+
+/* #about's editorial inset (gutter × 6 each side) scales down in steps
+   instead of crushing the text column on tablets/phones */
+@media (max-width: 1100px){
+  #about .container{
+    padding-left: calc(var(--gutter) * 3);
+    padding-right: calc(var(--gutter) * 3);
+  }
+}
+@media (max-width: 700px){
+  #about .container{
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+}
+
+/* Checkout panel breathing room on small screens */
+@media (max-width: 600px){
+  .checkout-panel{ padding: 26px 18px; }
+}
+
+/* Columns whose min-content exceeds their track on narrow phones */
+@media (max-width: 480px){
+  .footer-grid{ grid-template-columns: 1fr; gap: 32px; }
+}
+@media (max-width: 380px){
+  .stats-row{ grid-template-columns: 1fr; gap: 24px; }
+}
+
+/* 16px form controls prevent iOS Safari's zoom-on-focus jump */
+@media (max-width: 720px){
+  .talk-form input, .talk-form select, .talk-form textarea,
+  .checkout-panel input, .checkout-panel select,
+  .newsletter input, .signup-form input{ font-size: 16px; }
+}
+
+/* Comfortable tap targets on touch devices */
+@media (pointer: coarse){
+  .qty-btn{ width: 32px; height: 32px; }
+}
+
+/* Ultra-wide displays: cap the content column, keep section backgrounds
+   and the header bar full-bleed. No effect at or below 1920px. */
+@media (min-width: 2048px){
+  .container, .nav-wrap{ max-width: 1920px; margin-left: auto; margin-right: auto; }
+  section > .hscroll{ max-width: 1920px; margin-left: auto; margin-right: auto; }
 }
