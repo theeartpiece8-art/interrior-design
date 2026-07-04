@@ -5,6 +5,43 @@ Newest entries at the top.
 
 ---
 
+## 2026-07-04 (late night) — Email notifications for contact messages (ready to activate)
+
+### Objective
+Send an email to the studio inbox the moment a contact message is stored.
+
+### Design
+Postgres AFTER INSERT trigger on `messages` using pg_net → Resend API.
+Chosen over Edge Function + webhook (fewer moving parts) and over EmailJS
+(client-side = exposed key). Properties:
+- exactly one email per stored message (AFTER INSERT = no duplicates)
+- async + exception-swallowed: email failure can never block a visitor
+- Resend API key encrypted in Supabase Vault, never in website code
+- every attempt logged to `email_notifications_log` (join with
+  `net._http_response` for status codes; Resend dashboard has final say)
+- reply_to = visitor's email, so replying answers them directly
+
+### Files
+- `supabase-email-notifications.sql` — NEW: complete setup (vault secret,
+  log table, trigger function with branded HTML template, trigger,
+  delivery-check query). Website files untouched.
+
+### Activation steps (user)
+1. Sign up free at resend.com (with nsbgjohnpaul@gmail.com), create an
+   API key.
+2. Paste the key into the marked placeholder in the SQL file.
+3. Run the whole file in Supabase SQL Editor.
+4. Submit the live contact form once; email should arrive within seconds.
+
+### Notes
+- Resend free tier without domain verification sends FROM
+  onboarding@resend.dev TO the signup email only. Verifying the
+  macspace.studio domain in Resend later allows from/to any address.
+- Verified today: visitor-path insert into `messages` still returns 201.
+- Secret key from earlier chat is still active — rotation still pending.
+
+---
+
 ## 2026-07-04 (night) — Responsive optimization pass, all pages clean 320px→2560px
 
 ### Objective

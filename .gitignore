@@ -1,0 +1,2 @@
+# server-side setup script contains the Resend API key — never publish
+supabase-email-notifications.sql
