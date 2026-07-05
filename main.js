@@ -482,13 +482,25 @@ document.addEventListener('DOMContentLoaded', function () {
       requestAnimationFrame(function () { ghost.style.opacity = '1'; });
     });
     setTimeout(function () {
+      /* if finishFade() already completed this fade (manual swipe),
+         do nothing — otherwise we would overwrite the newer photo */
+      if (!ghost.parentNode) return;
       img.src = src;
-      if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      ghost.parentNode.removeChild(ghost);
     }, 980);
   }
 
   function preloadPhotos(photos) {
     photos.forEach(function (src) { var im = new Image(); im.src = src; });
+  }
+
+  /* if a crossfade is mid-flight, complete it instantly so a manual
+     swipe always responds right away */
+  function finishFade(container, img) {
+    var ghost = container && container.querySelector('.xfade-ghost');
+    if (!ghost) return;
+    img.src = ghost.src;
+    ghost.parentNode.removeChild(ghost);
   }
 
   function buildLightbox() {
@@ -520,6 +532,34 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!lbProduct || !lbProduct.id) return;
       addToCart(lbProduct.id, lbProduct.cartName, lbProduct.price, lbProduct.cartImage);
       closeLightbox();
+    });
+
+    /* manual scroll on the photo: swipe (touch) or click-drag (mouse)
+       moves to the next/previous photo and restarts the auto timer */
+    var lbMediaEl = lightboxEl.querySelector('.lb-media');
+    var swipeX = null;
+    function endSwipe(x) {
+      if (swipeX === null) return;
+      var dx = x - swipeX;
+      swipeX = null;
+      if (Math.abs(dx) > 40) {
+        finishFade(lbMediaEl, lbImgEl); /* make rapid swipes responsive */
+        showLightboxPhoto(lbIndex + (dx < 0 ? 1 : -1), true);
+      }
+    }
+    lbMediaEl.addEventListener('touchstart', function (e) {
+      swipeX = e.touches[0].clientX;
+    }, { passive: true });
+    lbMediaEl.addEventListener('touchend', function (e) {
+      endSwipe(e.changedTouches[0].clientX);
+    }, { passive: true });
+    lbMediaEl.addEventListener('mousedown', function (e) {
+      swipeX = e.clientX;
+      e.preventDefault();
+    });
+    document.addEventListener('mouseup', function (e) {
+      if (lightboxEl.classList.contains('open')) endSwipe(e.clientX);
+      else swipeX = null;
     });
     document.addEventListener('keydown', function (e) {
       if (!lightboxEl.classList.contains('open')) return;

@@ -502,7 +502,9 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
      so the layout never jumps while photos cycle */
   width:100%; max-width:440px; aspect-ratio:1 / 1; position:relative;
   overflow:hidden; border-radius:12px;
+  cursor:grab; touch-action: pan-y; /* swipe left/right = manual scroll */
 }
+.product-lightbox .lb-media:active{ cursor:grabbing; }
 .product-lightbox .lb-media img{ width:100%; height:100%; object-fit:cover; }
 
 /* crossfade ghost: the incoming photo fades in over the current one */
