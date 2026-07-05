@@ -445,6 +445,89 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   /* =========================================================
+     PRODUCT PHOTOS — up to 3 per product via data-photos="a|b|c"
+     on .product-card. Hover previews the 2nd photo; clicking the
+     card opens a lightbox gallery with arrows.
+     ========================================================= */
+  var lightboxEl = null, lbImgEl, lbNameEl, lbCountEl, lbPhotos = [], lbIndex = 0;
+
+  function buildLightbox() {
+    if (lightboxEl) return;
+    lightboxEl = document.createElement('div');
+    lightboxEl.className = 'product-lightbox';
+    lightboxEl.innerHTML =
+      '<button class="lb-close">Close</button>' +
+      '<img alt="">' +
+      '<div class="lb-name"></div>' +
+      '<div class="lb-controls">' +
+        '<button class="hscroll-btn" data-lb="-1" aria-label="Previous photo">←</button>' +
+        '<span class="lb-count"></span>' +
+        '<button class="hscroll-btn" data-lb="1" aria-label="Next photo">→</button>' +
+      '</div>';
+    document.body.appendChild(lightboxEl);
+    lbImgEl = lightboxEl.querySelector('img');
+    lbNameEl = lightboxEl.querySelector('.lb-name');
+    lbCountEl = lightboxEl.querySelector('.lb-count');
+    lightboxEl.querySelector('.lb-close').addEventListener('click', closeLightbox);
+    lightboxEl.addEventListener('click', function (e) {
+      if (e.target === lightboxEl) closeLightbox();
+    });
+    lightboxEl.querySelectorAll('[data-lb]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        showLightboxPhoto(lbIndex + parseInt(btn.getAttribute('data-lb'), 10));
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!lightboxEl.classList.contains('open')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') showLightboxPhoto(lbIndex - 1);
+      if (e.key === 'ArrowRight') showLightboxPhoto(lbIndex + 1);
+    });
+  }
+
+  function showLightboxPhoto(i) {
+    lbIndex = (i + lbPhotos.length) % lbPhotos.length;
+    lbImgEl.src = lbPhotos[lbIndex];
+    lbCountEl.textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
+  }
+
+  function openLightbox(photos, name) {
+    buildLightbox();
+    lbPhotos = photos;
+    lbNameEl.textContent = name || '';
+    showLightboxPhoto(0);
+    /* hide arrows and count when there is only one photo */
+    lightboxEl.querySelector('.lb-controls').style.display = photos.length > 1 ? 'flex' : 'none';
+    lightboxEl.classList.add('open');
+  }
+
+  function closeLightbox() {
+    if (lightboxEl) lightboxEl.classList.remove('open');
+  }
+
+  document.querySelectorAll('.product-card[data-photos]').forEach(function (cardEl) {
+    var photos = cardEl.getAttribute('data-photos').split('|')
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean)
+      .slice(0, 3); /* max 3 photos per product */
+    if (!photos.length) return;
+    var img = cardEl.querySelector('.card-media img');
+    var link = cardEl.querySelector('a.card');
+    var name = (cardEl.querySelector('h3') || {}).textContent || '';
+
+    if (img && photos.length > 1 && window.matchMedia('(hover: hover)').matches) {
+      cardEl.addEventListener('mouseenter', function () { img.src = photos[1]; });
+      cardEl.addEventListener('mouseleave', function () { img.src = photos[0]; });
+    }
+    if (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        openLightbox(photos, name);
+      });
+    }
+  });
+
+  /* =========================================================
      MOCK SHOPPING CART — demo only, no real payments/backend
      ========================================================= */
   var CART_KEY = 'studioCartDemo';
