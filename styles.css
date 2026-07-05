@@ -395,6 +395,18 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
 .newsletter input::placeholder{ color: var(--text-soft); }
 .newsletter button{ background:none; border:none; color: var(--text); text-transform:uppercase; font-size:.75rem; letter-spacing:.12em; cursor:pointer; font-weight:600; }
 
+/* Footer newsletter signup — same visual language as the big
+   newsletter section's form (underlined field, uppercase text button);
+   previously completely unstyled, so the button rendered as a raw
+   default browser button */
+.signup-form{ display:flex; align-items:center; border-bottom:1px solid var(--border); margin-top:8px; }
+.signup-form input{ flex:1; min-width:0; background:none; border:none; color: var(--text); padding: 10px 4px 10px 0; font-size:.88rem; }
+.signup-form input::placeholder{ color: var(--text-soft); }
+.signup-form button{
+  background:none; border:none; color: var(--text); cursor:pointer;
+  text-transform:uppercase; font-size:.72rem; letter-spacing:.12em; font-weight:600; white-space:nowrap;
+}
+
 /* Footer */
 .site-footer{ border-top:1px solid var(--border); padding: 80px 0 28px; background: var(--bg); }
 .footer-grid{ display:grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 56px; }
