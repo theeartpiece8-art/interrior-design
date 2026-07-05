@@ -5,7 +5,10 @@
    kinetic headlines, pill buttons, generous negative space).
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Lexend:wght@300;400;500;600;700&display=swap');
+/* Only the weights the stylesheet actually uses — Archivo 600 (pull
+   quotes), 700 (headings), 800 (logo/hero); Space Grotesk 400/600;
+   Lexend 400/500/600. Unused weights were slowing first paint. */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Space+Grotesk:wght@400;600&family=Lexend:wght@400;500;600&display=swap');
 
 :root{
   --bg: #0e0e0d;
@@ -352,7 +355,7 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
 /* Project / article cards */
 .card{ display:block; }
 .card-media{ position:relative; overflow:hidden; margin-bottom: 18px; aspect-ratio: 1 / 1; height:auto; border-radius: 10px; }
-.card-media img{ width:100%; height:100%; object-fit:cover; transition: transform .6s var(--ease), opacity .26s var(--ease); }
+.card-media img{ width:100%; height:100%; object-fit:cover; transition: transform .6s var(--ease); }
 .card:hover .card-media img{ transform: scale(1.06); }
 .card-cat{ font-size:.66rem; text-transform:uppercase; letter-spacing:.14em; color: var(--accent); font-weight:600; }
 .card h3{ font-size:1.3rem; margin: 8px 0 4px; }
@@ -494,12 +497,18 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
   display:flex; flex-direction:column; align-items:center; gap:10px;
   max-width:560px; width:100%; text-align:center; margin:auto; padding: 44px 0 24px;
 }
-.product-lightbox img{
+.product-lightbox .lb-media{
   /* fixed square frame: every photo renders in the identical container,
      so the layout never jumps while photos cycle */
-  width:100%; max-width:440px; aspect-ratio:1 / 1; height:auto;
-  object-fit:cover; border-radius:12px;
-  transition: opacity .26s var(--ease);
+  width:100%; max-width:440px; aspect-ratio:1 / 1; position:relative;
+  overflow:hidden; border-radius:12px;
+}
+.product-lightbox .lb-media img{ width:100%; height:100%; object-fit:cover; }
+
+/* crossfade ghost: the incoming photo fades in over the current one */
+.xfade-ghost{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  opacity:0; transition: opacity .9s var(--ease); pointer-events:none;
 }
 @media (max-width:600px){
   .product-lightbox{ padding:16px; }

@@ -316,9 +316,20 @@ document.addEventListener('DOMContentLoaded', function () {
       if (gallery.scrollLeft < 4) gallery.scrollLeft += wrapWidth();
     }
 
+    /* only animate while the gallery is actually on screen — a rAF
+       loop that writes scrollLeft every frame is wasted work (and
+       forces layout) whenever the gallery is scrolled out of view */
+    var galleryOnScreen = true;
+    if ('IntersectionObserver' in window) {
+      galleryOnScreen = false;
+      new IntersectionObserver(function (entries) {
+        galleryOnScreen = entries[0].isIntersecting;
+      }, { rootMargin: '120px' }).observe(gallery);
+    }
+
     if (!reduceMotion) {
       (function step() {
-        if (!paused && !gliding && !document.hidden) {
+        if (galleryOnScreen && !paused && !gliding && !document.hidden) {
           gallery.scrollLeft += 0.7;
           if (gallery.scrollLeft >= wrapWidth()) gallery.scrollLeft -= wrapWidth();
         }
@@ -457,12 +468,27 @@ document.addEventListener('DOMContentLoaded', function () {
   var lightboxEl = null, lbImgEl, lbNameEl, lbDescEl, lbPriceEl, lbDotsEl, lbAddBtn;
   var lbPhotos = [], lbIndex = 0, lbProduct = null, lbTimer = null;
 
-  function fadeSwap(img, src) {
-    img.style.opacity = '0';
+  /* Gentle crossfade: the incoming photo fades in on a ghost layer
+     over the current one, then becomes the real image. No blink. */
+  function crossfade(container, img, src) {
+    if (!container || img.getAttribute('src') === src) return;
+    if (container.querySelector('.xfade-ghost')) return; /* one fade at a time */
+    var ghost = document.createElement('img');
+    ghost.className = 'xfade-ghost';
+    ghost.alt = '';
+    ghost.src = src;
+    container.appendChild(ghost);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { ghost.style.opacity = '1'; });
+    });
     setTimeout(function () {
       img.src = src;
-      img.style.opacity = '1';
-    }, 260);
+      if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+    }, 980);
+  }
+
+  function preloadPhotos(photos) {
+    photos.forEach(function (src) { var im = new Image(); im.src = src; });
   }
 
   function buildLightbox() {
@@ -472,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function () {
     lightboxEl.innerHTML =
       '<button class="lb-close">Close</button>' +
       '<div class="lb-inner">' +
-        '<img alt="">' +
+        '<div class="lb-media"><img alt=""></div>' +
         '<div class="lb-dots"></div>' +
         '<div class="lb-name"></div>' +
         '<p class="lb-desc"></p>' +
@@ -517,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function showLightboxPhoto(i, manual) {
     lbIndex = (i + lbPhotos.length) % lbPhotos.length;
-    fadeSwap(lbImgEl, lbPhotos[lbIndex]);
+    crossfade(lbImgEl.parentNode, lbImgEl, lbPhotos[lbIndex]);
     lbDotsEl.querySelectorAll('.lb-dot').forEach(function (d, j) {
       d.classList.toggle('active', j === lbIndex);
     });
@@ -528,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (lbTimer) clearInterval(lbTimer);
     lbTimer = null;
     if (lbPhotos.length > 1 && !reduceMotionPref) {
-      lbTimer = setInterval(function () { showLightboxPhoto(lbIndex + 1); }, 3500);
+      lbTimer = setInterval(function () { showLightboxPhoto(lbIndex + 1); }, 4600);
     }
   }
 
@@ -537,8 +563,8 @@ document.addEventListener('DOMContentLoaded', function () {
     lbProduct = product;
     lbPhotos = product.photos;
     lbIndex = 0;
-    lbImgEl.style.opacity = '1';
     lbImgEl.src = lbPhotos[0];
+    preloadPhotos(lbPhotos);
     lbNameEl.textContent = product.name;
     lbDescEl.textContent = product.desc;
     lbPriceEl.textContent = product.priceText;
@@ -575,16 +601,24 @@ document.addEventListener('DOMContentLoaded', function () {
       cartImage: addBtn ? addBtn.getAttribute('data-image') : photos[0]
     };
 
-    /* automatic photo cycling on the card, paused while hovered */
+    /* automatic photo cycling on the card: slow crossfade, paused
+       while hovered, and only while the card is actually on screen */
     if (img && photos.length > 1 && !reduceMotionPref) {
-      var idx = 0, hovered = false;
+      var idx = 0, hovered = false, onScreen = true;
       cardEl.addEventListener('mouseenter', function () { hovered = true; });
       cardEl.addEventListener('mouseleave', function () { hovered = false; });
+      if ('IntersectionObserver' in window) {
+        onScreen = false;
+        new IntersectionObserver(function (entries) {
+          onScreen = entries[0].isIntersecting;
+        }, { rootMargin: '80px' }).observe(cardEl);
+      }
+      setTimeout(function () { preloadPhotos(photos); }, 1500);
       setInterval(function () {
-        if (hovered || document.hidden) return;
+        if (hovered || document.hidden || !onScreen) return;
         idx = (idx + 1) % photos.length;
-        fadeSwap(img, photos[idx]);
-      }, 3200 + Math.floor(Math.random() * 900)); /* offset so cards don't flip in sync */
+        crossfade(img.parentNode, img, photos[idx]);
+      }, 4800 + Math.floor(Math.random() * 1200)); /* offset so cards don't flip in sync */
     }
 
     if (link) {
