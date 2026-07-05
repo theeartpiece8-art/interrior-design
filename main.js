@@ -445,11 +445,25 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   /* =========================================================
-     PRODUCT PHOTOS — up to 3 per product via data-photos="a|b|c"
-     on .product-card. Hover previews the 2nd photo; clicking the
-     card opens a lightbox gallery with arrows.
+     PRODUCT PHOTOS & DETAIL VIEW
+     Up to 3 photos per product via data-photos="a|b|c" on
+     .product-card. Card photos cycle automatically (paused on
+     hover) so customers see every photo without clicking.
+     Clicking a card opens a detail view: auto-cycling photo with
+     dot indicators, description (data-description), price and an
+     Add to Cart button.
      ========================================================= */
-  var lightboxEl = null, lbImgEl, lbNameEl, lbCountEl, lbPhotos = [], lbIndex = 0;
+  var reduceMotionPref = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var lightboxEl = null, lbImgEl, lbNameEl, lbDescEl, lbPriceEl, lbDotsEl, lbAddBtn;
+  var lbPhotos = [], lbIndex = 0, lbProduct = null, lbTimer = null;
+
+  function fadeSwap(img, src) {
+    img.style.opacity = '0';
+    setTimeout(function () {
+      img.src = src;
+      img.style.opacity = '1';
+    }, 260);
+  }
 
   function buildLightbox() {
     if (lightboxEl) return;
@@ -457,72 +471,126 @@ document.addEventListener('DOMContentLoaded', function () {
     lightboxEl.className = 'product-lightbox';
     lightboxEl.innerHTML =
       '<button class="lb-close">Close</button>' +
-      '<img alt="">' +
-      '<div class="lb-name"></div>' +
-      '<div class="lb-controls">' +
-        '<button class="hscroll-btn" data-lb="-1" aria-label="Previous photo">←</button>' +
-        '<span class="lb-count"></span>' +
-        '<button class="hscroll-btn" data-lb="1" aria-label="Next photo">→</button>' +
+      '<div class="lb-inner">' +
+        '<img alt="">' +
+        '<div class="lb-dots"></div>' +
+        '<div class="lb-name"></div>' +
+        '<p class="lb-desc"></p>' +
+        '<div class="lb-price"></div>' +
+        '<button class="btn btn-solid lb-add">Add to Cart</button>' +
       '</div>';
     document.body.appendChild(lightboxEl);
     lbImgEl = lightboxEl.querySelector('img');
     lbNameEl = lightboxEl.querySelector('.lb-name');
-    lbCountEl = lightboxEl.querySelector('.lb-count');
+    lbDescEl = lightboxEl.querySelector('.lb-desc');
+    lbPriceEl = lightboxEl.querySelector('.lb-price');
+    lbDotsEl = lightboxEl.querySelector('.lb-dots');
+    lbAddBtn = lightboxEl.querySelector('.lb-add');
     lightboxEl.querySelector('.lb-close').addEventListener('click', closeLightbox);
     lightboxEl.addEventListener('click', function (e) {
       if (e.target === lightboxEl) closeLightbox();
     });
-    lightboxEl.querySelectorAll('[data-lb]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        showLightboxPhoto(lbIndex + parseInt(btn.getAttribute('data-lb'), 10));
-      });
+    lbAddBtn.addEventListener('click', function () {
+      if (!lbProduct || !lbProduct.id) return;
+      addToCart(lbProduct.id, lbProduct.cartName, lbProduct.price, lbProduct.cartImage);
+      closeLightbox();
     });
     document.addEventListener('keydown', function (e) {
       if (!lightboxEl.classList.contains('open')) return;
       if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft') showLightboxPhoto(lbIndex - 1);
-      if (e.key === 'ArrowRight') showLightboxPhoto(lbIndex + 1);
+      if (e.key === 'ArrowLeft') showLightboxPhoto(lbIndex - 1, true);
+      if (e.key === 'ArrowRight') showLightboxPhoto(lbIndex + 1, true);
     });
   }
 
-  function showLightboxPhoto(i) {
-    lbIndex = (i + lbPhotos.length) % lbPhotos.length;
-    lbImgEl.src = lbPhotos[lbIndex];
-    lbCountEl.textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
+  function renderLbDots() {
+    lbDotsEl.innerHTML = '';
+    lbDotsEl.style.display = lbPhotos.length > 1 ? 'flex' : 'none';
+    lbPhotos.forEach(function (_, i) {
+      var d = document.createElement('button');
+      d.className = 'lb-dot' + (i === lbIndex ? ' active' : '');
+      d.setAttribute('aria-label', 'Photo ' + (i + 1));
+      d.addEventListener('click', function () { showLightboxPhoto(i, true); });
+      lbDotsEl.appendChild(d);
+    });
   }
 
-  function openLightbox(photos, name) {
+  function showLightboxPhoto(i, manual) {
+    lbIndex = (i + lbPhotos.length) % lbPhotos.length;
+    fadeSwap(lbImgEl, lbPhotos[lbIndex]);
+    lbDotsEl.querySelectorAll('.lb-dot').forEach(function (d, j) {
+      d.classList.toggle('active', j === lbIndex);
+    });
+    if (manual) restartLbTimer();
+  }
+
+  function restartLbTimer() {
+    if (lbTimer) clearInterval(lbTimer);
+    lbTimer = null;
+    if (lbPhotos.length > 1 && !reduceMotionPref) {
+      lbTimer = setInterval(function () { showLightboxPhoto(lbIndex + 1); }, 3500);
+    }
+  }
+
+  function openLightbox(product) {
     buildLightbox();
-    lbPhotos = photos;
-    lbNameEl.textContent = name || '';
-    showLightboxPhoto(0);
-    /* hide arrows and count when there is only one photo */
-    lightboxEl.querySelector('.lb-controls').style.display = photos.length > 1 ? 'flex' : 'none';
+    lbProduct = product;
+    lbPhotos = product.photos;
+    lbIndex = 0;
+    lbImgEl.style.opacity = '1';
+    lbImgEl.src = lbPhotos[0];
+    lbNameEl.textContent = product.name;
+    lbDescEl.textContent = product.desc;
+    lbPriceEl.textContent = product.priceText;
+    lbAddBtn.style.display = product.id ? '' : 'none';
+    renderLbDots();
+    restartLbTimer();
     lightboxEl.classList.add('open');
   }
 
   function closeLightbox() {
     if (lightboxEl) lightboxEl.classList.remove('open');
+    if (lbTimer) { clearInterval(lbTimer); lbTimer = null; }
   }
 
-  document.querySelectorAll('.product-card[data-photos]').forEach(function (cardEl) {
-    var photos = cardEl.getAttribute('data-photos').split('|')
+  document.querySelectorAll('.product-card').forEach(function (cardEl) {
+    var img = cardEl.querySelector('.card-media img');
+    var link = cardEl.querySelector('a.card');
+    var addBtn = cardEl.querySelector('.add-to-cart');
+    var photos = (cardEl.getAttribute('data-photos') || '').split('|')
       .map(function (s) { return s.trim(); })
       .filter(Boolean)
       .slice(0, 3); /* max 3 photos per product */
+    if (!photos.length && img) photos = [img.getAttribute('src')];
     if (!photos.length) return;
-    var img = cardEl.querySelector('.card-media img');
-    var link = cardEl.querySelector('a.card');
-    var name = (cardEl.querySelector('h3') || {}).textContent || '';
 
-    if (img && photos.length > 1 && window.matchMedia('(hover: hover)').matches) {
-      cardEl.addEventListener('mouseenter', function () { img.src = photos[1]; });
-      cardEl.addEventListener('mouseleave', function () { img.src = photos[0]; });
+    var product = {
+      photos: photos,
+      name: (cardEl.querySelector('h3') || {}).textContent || '',
+      desc: cardEl.getAttribute('data-description') || '',
+      priceText: (cardEl.querySelector('.price') || {}).textContent || '',
+      id: addBtn ? addBtn.getAttribute('data-id') : null,
+      cartName: addBtn ? addBtn.getAttribute('data-name') : '',
+      price: addBtn ? parseFloat(addBtn.getAttribute('data-price')) : 0,
+      cartImage: addBtn ? addBtn.getAttribute('data-image') : photos[0]
+    };
+
+    /* automatic photo cycling on the card, paused while hovered */
+    if (img && photos.length > 1 && !reduceMotionPref) {
+      var idx = 0, hovered = false;
+      cardEl.addEventListener('mouseenter', function () { hovered = true; });
+      cardEl.addEventListener('mouseleave', function () { hovered = false; });
+      setInterval(function () {
+        if (hovered || document.hidden) return;
+        idx = (idx + 1) % photos.length;
+        fadeSwap(img, photos[idx]);
+      }, 3200 + Math.floor(Math.random() * 900)); /* offset so cards don't flip in sync */
     }
+
     if (link) {
       link.addEventListener('click', function (e) {
         e.preventDefault();
-        openLightbox(photos, name);
+        openLightbox(product);
       });
     }
   });
