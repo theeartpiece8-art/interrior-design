@@ -243,7 +243,11 @@ document.addEventListener('DOMContentLoaded', function () {
           io.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.15 });
+    /* threshold 0 + bottom rootMargin: fires once a section's top edge is
+       ~60px into view. A percentage threshold can never fire for sections
+       taller than the viewport (e.g. the shop grid on phones), which left
+       them permanently invisible. */
+    }, { threshold: 0, rootMargin: '0px 0px -60px 0px' });
     revealEls.forEach(function (el) { io.observe(el); });
   } else {
     revealEls.forEach(function (el) { el.classList.add('visible'); });
