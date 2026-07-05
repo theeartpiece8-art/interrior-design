@@ -483,7 +483,7 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
 /* Product detail view — photo auto-cycles with dot indicators;
    name, description, price and Add to Cart beneath (max 3 photos) */
 .product-lightbox{
-  position:fixed; inset:0; z-index:230; background:rgba(14,14,13,.94);
+  position:fixed; inset:0; z-index:230; background:rgba(14,14,13,.97);
   display:flex; align-items:flex-start; justify-content:center;
   opacity:0; pointer-events:none; visibility:hidden;
   transition:opacity .3s var(--ease), visibility 0s linear .3s;
@@ -495,8 +495,18 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
   max-width:560px; width:100%; text-align:center; margin:auto; padding: 44px 0 24px;
 }
 .product-lightbox img{
-  width:100%; max-width:460px; max-height:52vh; object-fit:cover; border-radius:12px;
+  /* fixed square frame: every photo renders in the identical container,
+     so the layout never jumps while photos cycle */
+  width:100%; max-width:440px; aspect-ratio:1 / 1; height:auto;
+  object-fit:cover; border-radius:12px;
   transition: opacity .26s var(--ease);
+}
+@media (max-width:600px){
+  .product-lightbox{ padding:16px; }
+  .product-lightbox .lb-inner{ padding:56px 0 32px; gap:8px; }
+  .product-lightbox .lb-name{ font-size:1.15rem; }
+  .product-lightbox .lb-desc{ font-size:.9rem; }
+  .product-lightbox .lb-add{ width:100%; justify-content:center; }
 }
 .product-lightbox .lb-dots{ display:flex; gap:9px; margin-top:8px; }
 .product-lightbox .lb-dot{
