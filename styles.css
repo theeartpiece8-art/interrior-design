@@ -113,8 +113,10 @@ p{ margin: 0 0 1em; }
   background: #0e0e0d; border-bottom:1px solid var(--border); overflow:hidden; white-space:nowrap;
   padding: 10px 0;
 }
-.clock-track{ display:inline-flex; gap: 56px; animation: ticker 28s linear infinite; }
-.clock-item{ display:inline-flex; gap:10px; align-items:baseline; font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color: #9e9c96; }
+/* spacing lives on each item (not flex gap) so the track's two halves
+   are exactly equal and the -50% loop restarts without a seam */
+.clock-track{ display:inline-flex; animation: ticker 28s linear infinite; }
+.clock-item{ display:inline-flex; gap:10px; align-items:baseline; margin-right:56px; font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color: #9e9c96; }
 .clock-item .city{ color: #f6f4ef; font-weight:600; }
 .clock-item .time{ font-variant-numeric: tabular-nums; color: #e08a58; font-family: var(--font-serif); }
 @keyframes ticker{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }

@@ -199,29 +199,45 @@ document.addEventListener('DOMContentLoaded', function () {
     { city: 'Dar es Salaam', tz: 'Africa/Dar_es_Salaam' }
   ];
   var clockTracks = document.querySelectorAll('.clock-track');
+  function buildClockSet() {
+    var html = '';
+    clockZones.forEach(function (zone) {
+      var time;
+      try {
+        time = new Intl.DateTimeFormat('en-GB', {
+          hour: '2-digit', minute: '2-digit', timeZone: zone.tz
+        }).format(new Date());
+      } catch (e) {
+        time = new Date().toLocaleTimeString();
+      }
+      html += '<span class="clock-item"><span class="city">' + zone.city + '</span><span class="time">' + time + '</span></span>';
+    });
+    return html;
+  }
   function updateClocks() {
     clockTracks.forEach(function (track) {
-      var html = '';
-      // repeat twice for seamless marquee loop
-      for (var r = 0; r < 2; r++) {
-        clockZones.forEach(function (zone) {
-          var time;
-          try {
-            time = new Intl.DateTimeFormat('en-GB', {
-              hour: '2-digit', minute: '2-digit', timeZone: zone.tz
-            }).format(new Date());
-          } catch (e) {
-            time = new Date().toLocaleTimeString();
-          }
-          html += '<span class="clock-item"><span class="city">' + zone.city + '</span><span class="time">' + time + '</span></span>';
-        });
-      }
-      track.innerHTML = html;
+      var setHtml = buildClockSet();
+      /* measure one set, then repeat it enough times to always cover
+         the full banner width — no empty stretch on wide screens */
+      track.innerHTML = setHtml;
+      var setW = track.scrollWidth || 700;
+      var bannerW = (track.parentElement && track.parentElement.clientWidth) || window.innerWidth;
+      var reps = Math.max(1, Math.ceil(bannerW / setW) + 1);
+      var half = new Array(reps + 1).join(setHtml);
+      /* two identical halves + -50% keyframe = perfectly seamless loop */
+      track.innerHTML = half + half;
+      /* constant scroll speed (~55px/s) regardless of screen width */
+      track.style.animationDuration = Math.round((setW * reps) / 55) + 's';
     });
   }
   if (clockTracks.length) {
     updateClocks();
     setInterval(updateClocks, 30000);
+    var clockResizeTimer;
+    window.addEventListener('resize', function () {
+      clearTimeout(clockResizeTimer);
+      clockResizeTimer = setTimeout(updateClocks, 250);
+    });
   }
 
   /* =========================================================
