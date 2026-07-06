@@ -103,8 +103,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var cursor = document.querySelector('.cursor-dot');
   if (cursor && window.matchMedia('(hover: hover)').matches) {
     document.addEventListener('mousemove', function (e) {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
+      /* transform instead of left/top: stays on the compositor,
+         no layout recalculation on every mouse move */
+      cursor.style.transform = 'translate3d(' + e.clientX + 'px,' + e.clientY + 'px,0) translate(-50%,-50%)';
       cursor.classList.add('active');
     });
     document.querySelectorAll('a, button, .filter-btn, .hover-list li').forEach(function (el) {
@@ -241,6 +242,17 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* =========================================================
+     MARQUEE ANIMATIONS PAUSE OFF-SCREEN (ticker, hero strip)
+     ========================================================= */
+  if ('IntersectionObserver' in window) {
+    document.querySelectorAll('.clock-track, .hero-media-track').forEach(function (el) {
+      new IntersectionObserver(function (entries) {
+        el.style.animationPlayState = entries[0].isIntersecting ? 'running' : 'paused';
+      }, { rootMargin: '80px' }).observe(el.parentElement);
+    });
+  }
+
+  /* =========================================================
      HERO KINETIC TEXT REVEAL
      ========================================================= */
   document.querySelectorAll('.reveal-line').forEach(function (line, i) {
@@ -344,9 +356,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (!reduceMotion) {
+      /* advance every other frame with whole pixels: same visual speed,
+         half the scroll/layout work per second */
+      var everyOther = false;
       (function step() {
-        if (galleryOnScreen && !paused && !gliding && !document.hidden) {
-          gallery.scrollLeft += 0.7;
+        everyOther = !everyOther;
+        if (everyOther && galleryOnScreen && !paused && !gliding && !document.hidden) {
+          gallery.scrollLeft += 1;
           if (gallery.scrollLeft >= wrapWidth()) gallery.scrollLeft -= wrapWidth();
         }
         requestAnimationFrame(step);

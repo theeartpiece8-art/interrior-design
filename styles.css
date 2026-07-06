@@ -72,8 +72,9 @@ p{ margin: 0 0 1em; }
 .cursor-dot{
   position: fixed; top:0; left:0; width:10px; height:10px; border-radius:50%;
   background: var(--accent); pointer-events:none; z-index: 999; mix-blend-mode: difference;
-  transform: translate(-50%,-50%); transition: width .2s var(--ease), height .2s var(--ease), opacity .2s;
-  opacity: 0;
+  transform: translate(-50%,-50%) translate(-100px,-100px); /* JS moves via transform (compositor-only) */
+  transition: width .2s var(--ease), height .2s var(--ease), opacity .2s;
+  opacity: 0; will-change: transform;
 }
 .cursor-dot.active{ opacity:1; }
 .cursor-dot.grow{ width:46px; height:46px; background: var(--text); }
@@ -624,6 +625,12 @@ section > .hscroll{ margin-left: 0; margin-right: 0; }
 /* Comfortable tap targets on touch devices */
 @media (pointer: coarse){
   .qty-btn{ width: 32px; height: 32px; }
+  /* backdrop blur is expensive on phone GPUs and causes scroll lag —
+     a near-opaque header looks almost identical and scrolls smoothly */
+  .site-header{
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: color-mix(in srgb, var(--bg) 97%, transparent);
+  }
 }
 
 /* Ultra-wide displays: cap the content column, keep section backgrounds
