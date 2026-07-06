@@ -5,6 +5,24 @@ Newest entries at the top.
 
 ---
 
+## 2026-07-06 - Coffee table product image added to shop
+
+### Objective
+Use the newly supplied coffee-table product photo in the Shop page.
+
+### Completed
+- Copied `The Shop /coffe table1.jpeg` into the public image folder as
+  `images/coffee-table-live-edge.jpg`.
+- Replaced the placeholder table product image in `shop.html` with the new
+  live-edge mvule coffee table photo.
+- Updated the visible product name, description, alt text and cart metadata.
+
+### Notes
+- Existing price retained: USh 410,000.
+- Source upload remains in `The Shop /coffe table1.jpeg`.
+
+---
+
 ## 2026-07-04 (late night) — Email notifications for contact messages (ready to activate)
 
 ### Objective

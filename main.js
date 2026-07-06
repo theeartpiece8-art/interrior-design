@@ -242,6 +242,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* =========================================================
+     TEAM PORTRAITS — black & white until toggled: hover shows
+     colour on desktop; tapping toggles it on touch screens
+     ========================================================= */
+  document.querySelectorAll('.team-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      card.classList.toggle('color');
+    });
+  });
+
+  /* =========================================================
      MARQUEE ANIMATIONS PAUSE OFF-SCREEN (ticker, hero strip)
      ========================================================= */
   if ('IntersectionObserver' in window) {
