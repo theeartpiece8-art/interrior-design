@@ -247,10 +247,51 @@ document.addEventListener('DOMContentLoaded', function () {
   if ('IntersectionObserver' in window) {
     document.querySelectorAll('.clock-track, .hero-media-track').forEach(function (el) {
       new IntersectionObserver(function (entries) {
-        el.style.animationPlayState = entries[0].isIntersecting ? 'running' : 'paused';
+        /* clear instead of "running" when visible, so the CSS
+           hover-pause rule on the hero strip still works */
+        el.style.animationPlayState = entries[0].isIntersecting ? '' : 'paused';
       }, { rootMargin: '80px' }).observe(el.parentElement);
     });
   }
+
+  /* =========================================================
+     HERO MEDIA STRIP — like the ticker: repeat the image set to
+     always cover the banner width, two equal halves = seamless loop
+     ========================================================= */
+  document.querySelectorAll('.hero-media-track').forEach(function (track) {
+    var seen = {}, set = [];
+    track.querySelectorAll('img').forEach(function (im) {
+      var s = im.getAttribute('src');
+      if (!seen[s]) { seen[s] = true; set.push({ src: s, alt: im.getAttribute('alt') || '' }); }
+    });
+    if (!set.length) return;
+
+    function itemHTML(o, hidden) {
+      return '<img src="' + o.src + '"' +
+        (hidden ? ' alt="" aria-hidden="true"' : ' alt="' + o.alt + '"') + '>';
+    }
+    function buildStrip() {
+      var itemW = (window.matchMedia('(max-width: 700px)').matches ? 200 : 260) + 12;
+      var bannerW = (track.parentElement && track.parentElement.clientWidth) || window.innerWidth;
+      var reps = Math.max(1, Math.ceil(bannerW / (set.length * itemW)) + 1);
+      var half1 = '', half2 = '';
+      for (var r = 0; r < reps; r++) {
+        set.forEach(function (o) {
+          half1 += itemHTML(o, r > 0);
+          half2 += itemHTML(o, true);
+        });
+      }
+      track.innerHTML = half1 + half2;
+      /* constant scroll speed (~55px/s) regardless of screen width */
+      track.style.animationDuration = Math.round((set.length * itemW * reps) / 55) + 's';
+    }
+    buildStrip();
+    var stripResizeTimer;
+    window.addEventListener('resize', function () {
+      clearTimeout(stripResizeTimer);
+      stripResizeTimer = setTimeout(buildStrip, 250);
+    });
+  });
 
   /* =========================================================
      HERO KINETIC TEXT REVEAL

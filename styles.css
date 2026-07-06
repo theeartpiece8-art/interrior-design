@@ -247,8 +247,10 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
 .reveal-line.in span{ transform: translateY(0); }
 .hero-media-strip{ overflow:hidden; margin: 60px calc(var(--gutter) * -1) 0; padding: 0 var(--gutter); }
 .hero-media-strip:hover .hero-media-track{ animation-play-state: paused; }
-.hero-media-track{ display:flex; gap: 12px; width:max-content; animation: hero-strip-scroll 24s linear infinite; }
-.hero-media-track img{ flex: 0 0 260px; width:260px; height: 150px; object-fit:cover; filter: grayscale(0.15); border-radius: 10px; }
+/* spacing on each item (not flex gap) keeps the two halves exactly
+   equal so the -50% loop wraps without a seam — same as the ticker */
+.hero-media-track{ display:flex; width:max-content; animation: hero-strip-scroll 24s linear infinite; }
+.hero-media-track img{ flex: 0 0 260px; width:260px; height: 150px; margin-right:12px; object-fit:cover; filter: grayscale(0.15); border-radius: 10px; }
 @keyframes hero-strip-scroll{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
 @media (max-width: 700px){ .hero-media-track img{ flex-basis: 200px; width:200px; height:120px; } }
 
