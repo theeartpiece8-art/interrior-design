@@ -11,16 +11,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Space+Grotesk:wght@400;600&family=Lexend:wght@400;500;600&display=swap');
 
 :root{
-  /* dark mode: deep burgundy */
-  --bg: #45171B;
-  --bg-alt: #521C21;
-  --bg-raised: #5C2127;
+  --bg: #0e0e0d;
+  --bg-alt: #171716;
+  --bg-raised: #1f1f1d;
   --text: #f6f4ef;
-  --text-soft: #c4a9a4;
-  --border: rgba(246,244,239,.16);
+  --text-soft: #9e9c96;
+  --border: rgba(246,244,239,.14);
   --accent: #e08a58;
   --line: #f6f4ef;
-  --overlay-bg: #45171B;
+  --overlay-bg: #0e0e0d;
   --max-width: 1320px;
   --gutter: 40px;
   /* Display = big bold grotesque headlines (Studio Namma feel).
@@ -112,7 +111,7 @@ p{ margin: 0 0 1em; }
 
 /* Announcement / clock ticker marquee */
 .clock-ticker{
-  background: #381216; border-bottom:1px solid var(--border); overflow:hidden; white-space:nowrap;
+  background: #0e0e0d; border-bottom:1px solid var(--border); overflow:hidden; white-space:nowrap;
   padding: 10px 0;
 }
 /* spacing lives on each item (not flex gap) so the track's two halves
@@ -498,7 +497,7 @@ html[data-theme="light"] .theme-toggle-thumb{ transform: translateX(18px); }
 /* Product detail view — photo auto-cycles with dot indicators;
    name, description, price and Add to Cart beneath (max 3 photos) */
 .product-lightbox{
-  position:fixed; inset:0; z-index:230; background:rgba(56,18,22,.97);
+  position:fixed; inset:0; z-index:230; background:rgba(14,14,13,.97);
   display:flex; align-items:flex-start; justify-content:center;
   opacity:0; pointer-events:none; visibility:hidden;
   transition:opacity .3s var(--ease), visibility 0s linear .3s;
